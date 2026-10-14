@@ -62,7 +62,7 @@ def get_tiktok_no_watermark_tikwm(url):
 def extract_with_ytdlp(url):
     try:
         import yt_dlp
-        ydl_opts = {'quiet': True, 'no_warnings': True, 'skip_download': True, 'noplaylist': True, 'format': 'best', 'extractor_args': {'tiktok': {'api_hostname': 'api22-normal-c-useast1a.tiktokv.com'}}}
+        ydl_opts = {'quiet': True, 'no_warnings': True, 'skip_download': True, 'noplaylist': True, 'format': 'best'}
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             direct_url = info.get('url')
@@ -89,7 +89,7 @@ def download():
     platform = detect_platform(url)
     if platform["name"] == "TikTok":
         tikwm_res = get_tiktok_no_watermark_tikwm(url)
-        if tikwm_res and tikwm_res.get("success") and tikwm_res.get("direct_url"):
+        if tikwm_res and tikwm_res.get("success"):
             result = {"success": True, "title": tikwm_res["title"], "thumbnail": tikwm_res["thumbnail"], "direct_url": tikwm_res["direct_url"], "watermark_url": tikwm_res["watermark_url"], "uploader": tikwm_res["uploader"], "duration": tikwm_res["duration"], "platform": platform, "original_url": url, "is_no_watermark": True, "watermark_removed": True, "source": "tikwm_no_watermark_api"}
             h = load_history()
             h.insert(0, {"url": url, "title": result["title"], "thumbnail": result["thumbnail"], "platform": platform, "time": datetime.now().isoformat(), "no_watermark": True})
@@ -127,19 +127,29 @@ def clear():
 
 @app.route("/api/platforms", methods=["GET"])
 def platforms():
-    return jsonify({"main": ["TikTok No Watermark"], "supported": [{"name":"TikTok","icon":"🎵","feature":"No Watermark ✅"},{"name":"Instagram","icon":"📸"},{"name":"Facebook","icon":"👍"},{"name":"X","icon":"𝕏"},{"name":"Pinterest","icon":"📌"},{"name":"YouTube","icon":"▶️"},{"name":"Any Link","icon":"🔗"}]})
+    return jsonify({"main": ["TikTok No Watermark"], "supported": [{"name":"TikTok","icon":"🎵","feature":"No Watermark ✅"}]})
 
 @app.route("/api/health", methods=["GET"])
 def health():
-    return jsonify({"status":"ok","service":"phantom-tt-no-watermark","feature":"TikTok No Watermark ✅","time":datetime.now().isoformat()})
+    return jsonify({"status":"ok","service":"phantom-tt-no-watermark","time":datetime.now().isoformat()})
 
 @app.route("/api/proxy-download", methods=["GET"])
 def proxy_dl():
     url = request.args.get("url")
+    filename = request.args.get("filename", "phantom_tiktok_no_watermark.mp4")
     if not url:
         return jsonify({"error":"url required"}),400
     try:
-        r = requests.get(url, stream=True, timeout=15, headers={"User-Agent":"Mozilla/5.0"})
-        return Response(r.iter_content(8192), content_type=r.headers.get('content-type','video/mp4'), headers={"Content-Disposition":"attachment; filename=phantom_no_watermark.mp4"})
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", "Referer": "https://www.tiktok.com/", "Accept": "*/*"}
+        r = requests.get(url, stream=True, timeout=25, headers=headers, allow_redirects=True)
+        ctype = r.headers.get('content-type','')
+        if 'text/html' in ctype.lower():
+            return jsonify({"error": "Link expired - please extract again. TikTok links expire fast."}), 400
+        def generate():
+            for chunk in r.iter_content(chunk_size=16384):
+                if chunk:
+                    yield chunk
+        return Response(generate(), content_type=r.headers.get('content-type','video/mp4'), headers={"Content-Disposition": f"attachment; filename={filename}", "Cache-Control": "no-cache"})
     except Exception as e:
-        return jsonify({"error":str(e)}),500
+        print(f"Proxy error: {e}")
+        return jsonify({"error": str(e)}), 500
