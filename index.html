@@ -178,11 +178,11 @@ async function downloadNow(){
               </div>
               <div style="font-size:12px;color:var(--muted);word-break:break-all">${data.webpage_url || url}</div>
               <div class="download-options">
-                <a class="btn btn-green" href="${data.direct_url}" target="_blank" download>⬇️ Download HD (Direct)</a>
+                <a class="btn btn-green" href="/api/proxy-download?url=${encodeURIComponent(data.direct_url)}&filename=phantom_tiktok_no_watermark.mp4" download>⬇️ Download NO WATERMARK NO WATERMARK (HD)</a>
                 <a class="btn btn-g" href="/api/proxy-download?url=${encodeURIComponent(data.direct_url)}" target="_blank">Proxy Download (No CORS)</a>
                 <button class="btn btn-g" onclick="copyLink('${data.direct_url}')">Copy Link</button>
               </div>
-              ${data.formats ? `<div style="margin-top:12px"><div style="font-size:12px;font-weight:600;margin-bottom:6px">Other qualities (from backend):</div><div style="display:flex;flex-wrap:wrap;gap:6px">${data.formats.map(f=>`<a class="tag" href="${f.url}" target="_blank">${f.quality} • ${f.ext}</a>`).join('')}</div></div>` : ''}
+              ${data.formats ? `<div style="margin-top:12px"><div style="font-size:12px;font-weight:600;margin-bottom:6px">Other qualities (from backend):</div><div style="display:flex;flex-wrap:wrap;gap:6px">${data.formats.map(f=>`<a class="tag" href="/api/proxy-download?url=${encodeURIComponent(f.url)}" target="_blank">${f.quality} (proxy) • ${f.ext}</a>`).join('')}</div></div>` : ''}
             </div>
           </div>
         </div>
